@@ -7,19 +7,24 @@ const Map = () => {
   const [animalPolygon, setAnimalPolygon] = useState(null);
 
   useEffect(() => {
-    // Fetch the GeoJSON data
-    fetch('./Varanus_albigularis.geojson')
-      .then(response => response.json())
+    fetch('/Varanus_albigularis.geojson')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        // Extract polygon coordinates from the GeoJSON
+        if (!data.features || !data.features[0] || !data.features[0].geometry) {
+          throw new Error('Invalid GeoJSON structure');
+        }
         const polygonCoordinates = data.features[0].geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
         setAnimalPolygon(polygonCoordinates);
-        console.log(polygonCoordinates)
+        console.log('Polygon loaded:', polygonCoordinates);
       })
       .catch(error => console.error('Error fetching animal data:', error));
-      // GWYN TODO: Error fetching animal data: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
-      // Server is returning HTML instead of JSON. I'm sure there's some non-intuitive fix out there.
   }, []);
+  
 
   // GWYN TODO: Get the click to actually show up as a marker + check overlap
   // Custom hook to handle user's click on the map
