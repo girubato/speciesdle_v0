@@ -13,6 +13,7 @@ const Map = () => {
   const [guessResult, setGuessResult] = useState(null);
   const [animalPolygon, setAnimalPolygon] = useState(null);
   const [userGuess, setUserGuess] = useState(null);
+  const [strikes, setStrikes] = useState(0);  // Added strikes state
 
   useEffect(() => {
     fetch('/Varanus_albigularis.geojson')
@@ -52,7 +53,14 @@ const Map = () => {
         const guess = [e.latlng.lat, e.latlng.lng];
         setUserGuess(guess);
         const isOverlap = isPointInsidePolygon(guess, animalPolygon);
-        setGuessResult(isOverlap ? 'Correct!' : 'Incorrect!');
+
+        // Update strikes if guess is incorrect
+        if (isOverlap) {
+          setGuessResult('Correct!');
+        } else {
+          setGuessResult('Incorrect!');
+          setStrikes(prevStrikes => prevStrikes + 1);  // Increment strikes on incorrect guess
+        }
       },
     });
 
@@ -72,6 +80,7 @@ const Map = () => {
         <GuessHandler />
       </MapContainer>
       {guessResult && <p>{guessResult}</p>}
+      {strikes > 0 && <p>Strikes: {strikes}</p>}  {/* Display the number of strikes */}
     </div>
   );
 };
