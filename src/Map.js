@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import './Map.css'; // Import the CSS file
 
 const customIcon = new L.Icon({
   iconUrl: '/marker-icon.png',
@@ -13,9 +14,12 @@ const Map = () => {
   const [guessResult, setGuessResult] = useState(null);
   const [animalPolygon, setAnimalPolygon] = useState(null);
   const [userGuess, setUserGuess] = useState(null);
-  const [strikes, setStrikes] = useState(0);  // Added strikes state
+  const [strikes, setStrikes] = useState(0);
+  const [hints, setHints] = useState([]); // State to store hints
+  const [currentHint, setCurrentHint] = useState(null); // State to store the current hint
 
   useEffect(() => {
+    // Fetch animal polygon data
     fetch('/Varanus_albigularis.geojson')
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -27,6 +31,18 @@ const Map = () => {
         setAnimalPolygon(polygonCoordinates);
       })
       .catch(error => console.error('Error fetching animal data:', error));
+
+    // Fetch hints data
+    fetch('/Varanus_albigularis_hints.json')
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        if (!data.hints || !Array.isArray(data.hints)) throw new Error('Invalid hints JSON structure');
+        setHints(data.hints.map(hintObj => Object.values(hintObj)[0])); // Extract hint strings
+      })
+      .catch(error => console.error('Error fetching hints data:', error));
   }, []);
 
   // Function to check if a point is inside a polygon
@@ -54,12 +70,17 @@ const Map = () => {
         setUserGuess(guess);
         const isOverlap = isPointInsidePolygon(guess, animalPolygon);
 
-        // Update strikes if guess is incorrect
         if (isOverlap) {
           setGuessResult('Correct!');
         } else {
           setGuessResult('Incorrect!');
-          setStrikes(prevStrikes => prevStrikes + 1);  // Increment strikes on incorrect guess
+          setStrikes(prevStrikes => {
+            const newStrikes = prevStrikes + 1;
+            if (newStrikes <= 5) {
+              setCurrentHint(hints[newStrikes - 1]); // Show the next hint
+            }
+            return newStrikes;
+          });
         }
       },
     });
@@ -68,19 +89,25 @@ const Map = () => {
   };
 
   return (
-    <div>
-      <MapContainer center={[0, 0]} zoom={2} style={{ height: '500px', width: '100%' }}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        {animalPolygon && <Polygon positions={animalPolygon} />}
-        {userGuess && (
-          <Marker position={userGuess} icon={customIcon}>
-            <Popup>Your Guess</Popup>
-          </Marker>
-        )}
-        <GuessHandler />
-      </MapContainer>
-      {guessResult && <p>{guessResult}</p>}
-      {strikes > 0 && <p>Strikes: {strikes}</p>}  {/* Display the number of strikes */}
+    <div className="map-wrapper">
+      <div className="map-container">
+        <MapContainer center={[0, 0]} zoom={2} style={{ height: '500px', width: '100%' }}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {animalPolygon && <Polygon positions={animalPolygon} />}
+          {userGuess && (
+            <Marker position={userGuess} icon={customIcon}>
+              <Popup>Your Guess</Popup>
+            </Marker>
+          )}
+          <GuessHandler />
+        </MapContainer>
+      </div>
+      <div className="text-container">
+        {guessResult && <p>{guessResult}</p>}
+        {strikes > 0 && <p>Strikes: {strikes}</p>}
+        {currentHint && <p>Hint: {currentHint}</p>} {/* Display the current hint */}
+        {strikes >= 5 && <p>Game Over! You've reached the maximum number of strikes.</p>} {/* End game message */}
+      </div>
     </div>
   );
 };

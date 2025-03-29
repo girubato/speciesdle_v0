@@ -1,0 +1,12 @@
+.map-wrapper {
+  display: flex;
+}
+
+.map-container {
+  flex: 1;
+}
+
+.text-container {
+  flex: 1;
+  padding: 20px;
+}
