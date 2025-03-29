@@ -17,10 +17,11 @@ const Map = () => {
   const [strikes, setStrikes] = useState(0);
   const [hints, setHints] = useState([]); // State to store hints
   const [currentHint, setCurrentHint] = useState(null); // State to store the current hint
+  const [speciesFolder, setSpeciesFolder] = useState('Varanus_albigularis'); // Default species folder
 
   useEffect(() => {
-    // Fetch animal polygon data
-    fetch('/Varanus_albigularis.geojson')
+    // Fetch animal polygon data dynamically based on the species folder
+    fetch(`/${speciesFolder}/${speciesFolder}.geojson`)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
@@ -32,8 +33,8 @@ const Map = () => {
       })
       .catch(error => console.error('Error fetching animal data:', error));
 
-    // Fetch hints data
-    fetch('/Varanus_albigularis_hints.json')
+    // Fetch hints data dynamically based on the species folder
+    fetch(`/${speciesFolder}/${speciesFolder}_hints.json`)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
@@ -43,7 +44,7 @@ const Map = () => {
         setHints(data.hints.map(hintObj => Object.values(hintObj)[0])); // Extract hint strings
       })
       .catch(error => console.error('Error fetching hints data:', error));
-  }, []);
+  }, [speciesFolder]); // Re-run effect when speciesFolder changes
 
   // Function to check if a point is inside a polygon
   const isPointInsidePolygon = (point, polygon) => {
@@ -107,6 +108,18 @@ const Map = () => {
         {strikes > 0 && <p>Strikes: {strikes}</p>}
         {currentHint && <p>Hint: {currentHint}</p>} {/* Display the current hint */}
         {strikes >= 5 && <p>Game Over! You've reached the maximum number of strikes.</p>} {/* End game message */}
+        <div>
+          <label htmlFor="species-select">Select Species: </label>
+          <select
+            id="species-select"
+            value={speciesFolder}
+            onChange={e => setSpeciesFolder(e.target.value)}
+          >
+            <option value="Varanus_albigularis">Varanus albigularis</option>
+            <option value="Species_two">Species Two</option>
+            {/* Add more species options here as needed */}
+          </select>
+        </div>
       </div>
     </div>
   );
